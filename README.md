@@ -10,3 +10,12 @@ Build docker image, parse your telegram token when building the image.
 $ docker build -t tbot --build-arg token=YOUR_TELEGRAM_TOKEN -f ./Dockerfile .
 $ docker run -d tbot:latest
 ```
+
+## Implementation
+
+Open your telegram app,  
+1. Create Group or Channel
+2. Invite your bot, make sure `bot` is set as admin if you are creating channel.
+3. Send message with command `/whoami` in the text field.
+
+Or you can send `/whoami` directly to your bot. Just create new chat with your bot.
