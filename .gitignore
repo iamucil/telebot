@@ -1,0 +1,8 @@
+.devcontainer 
+.vscode/
+.code
+bin/
+
+*.sh
+app.json
+heroku*.*
