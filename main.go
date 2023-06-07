@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -31,16 +32,13 @@ func main() {
 			return
 		}
 	}
-	var telegramToken string
+
 	if telegramTokenStr, found := os.LookupEnv("TELEGRAM_TOKEN"); found {
 		if telegramTokenStr != "" {
-			telegramToken = telegramTokenStr
+			token = telegramTokenStr
 		}
 	}
-	if token != "" {
-		telegramToken = token
-	}
-	if telegramToken == "" {
+	if token == "" {
 		panic("bad token")
 	}
 	var defaultTransport http.RoundTripper = &http.Transport{
@@ -61,7 +59,7 @@ func main() {
 	}
 
 	pref := tbot.Settings{
-		Token:  telegramToken,
+		Token:  token,
 		Poller: &tbot.LongPoller{Timeout: 10 * time.Second},
 		Client: client,
 	}
@@ -69,6 +67,10 @@ func main() {
 	bot, err := tbot.NewBot(pref)
 	if err != nil {
 		panic(err)
+	}
+
+	if profile := bot.Me; profile != nil {
+		fmt.Fprintf(os.Stdout, "Telegram bot running: %s\r\n", profile.Username)
 	}
 
 	bot.Handle(tbot.OnText, func(ctx tbot.Context) error {

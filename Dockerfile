@@ -29,4 +29,5 @@ COPY --from=builder /github.com/iamucil/telebot/bin/app ./tbot
 
 EXPOSE 80 
 EXPOSE 8080
+
 ENTRYPOINT ["./tbot"]
