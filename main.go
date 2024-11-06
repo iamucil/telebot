@@ -2,28 +2,43 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"sync"
 	"text/template"
 	"time"
 
-	tbot "gopkg.in/telebot.v3"
+	tbot "gopkg.in/telebot.v4"
 )
 
 var (
-	tpl *template.Template
+	tpl          *template.Template
+	senderTplMsg *template.Template
 
 	modulesMu sync.RWMutex
 	token     string
 )
 
 func init() {
-	tplStr := `<tg-spoiler>{{ .ID }}</tg-spoiler> (<strong>{{.Uname }}</strong>)`
+	tplStr := `{{.ChatType}} <tg-spoiler>{{ .ID }}</tg-spoiler> (<strong>{{.Uname }}</strong>) 
+	{{if .ThreadID}}
+	Call from Topic ID: <strong>{{.ThreadID}}</strong> [<strong>{{.TopicName}}</strong>]
+	{{end}}
+	<strong>Sender</strong><code>
+	Username : {{.Username}}
+	Name     : {{.FirstName}} {{.LastName}}
+	</code>`
+	senderTplMsgStr := `User has running bot command {{if .Command}}<code>{{.Command}}</code>{{end}}
+	<strong>Sender</strong><code>
+	{{.Sender}}
+	</code>`
 	tpl = template.Must(template.New("bot-template").Parse(tplStr))
+	senderTplMsg = template.Must(template.New("bot-template-for-sender").Parse(senderTplMsgStr))
 }
 
 func main() {
@@ -119,25 +134,65 @@ func respond(ctx tbot.Context) error {
 		return nil
 	}
 
+	if b, err := json.MarshalIndent(ctx.Sender(), "", "    "); err == nil {
+		sendTo := tbot.Chat{
+			ID: 10479058,
+		}
+		buff := new(bytes.Buffer)
+		if err := senderTplMsg.Execute(buff, map[string]any{
+			"Command": "",
+			"Sender":  string(b),
+		}); err == nil {
+			ctx.Bot().Send(&sendTo, buff.String(), tbot.ModeHTML)
+		}
+	}
+	sender := ctx.Sender()
 	ctx.Notify(tbot.Typing)
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	user := ctx.Sender()
 	buf := new(bytes.Buffer)
 	switch t := chat.Type; t {
 	case "group", "channel", "supergroup":
-		_ = tpl.Execute(buf, map[string]interface{}{
-			"ID":    chat.ID,
-			"Uname": chat.Title,
+		var threadID string
+		var topicName string
+		if id := msg.ThreadID; id != 0 {
+			threadID = strconv.Itoa(id)
+		}
+		if topicMsg := msg.ReplyTo; topicMsg != nil {
+			if topic := topicMsg.TopicCreated; topic != nil {
+				topicName = topic.Name
+			}
+		}
+
+		_ = tpl.Execute(buf, map[string]any{
+			"ChatType":  t,
+			"ID":        chat.ID,
+			"Uname":     chat.Title,
+			"ThreadID":  threadID,
+			"TopicName": topicName,
+			"Username":  sender.Username,
+			"FirstName": sender.FirstName,
+			"LastName":  sender.LastName,
 		})
 	case "private":
-		_ = tpl.Execute(buf, map[string]interface{}{
-			"ID":    user.ID,
-			"Uname": user.Username,
+		_ = tpl.Execute(buf, map[string]any{
+			"ChatType":  t,
+			"ID":        user.ID,
+			"Uname":     user.Username,
+			"ThreadID":  "",
+			"TopicName": "",
+			"Username":  sender.Username,
+			"FirstName": sender.FirstName,
+			"LastName":  sender.LastName,
 		})
 	}
 	textMessage := buf.String()
 	if textMessage == "" {
 		return nil
 	}
-	return ctx.Send(buf.String(), tbot.ModeHTML)
+
+	if err := ctx.Send(buf.String(), tbot.ModeHTML); err != nil {
+		panic(err)
+	}
+	return nil
 }

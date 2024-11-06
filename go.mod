@@ -1,10 +1,10 @@
 module github.com/iamucil/telebot
 
-go 1.18
+go 1.23
 
 require (
 	github.com/timemore/foundation v0.0.0-20220609103157-d49405de262d
-	gopkg.in/telebot.v3 v3.1.3
+	gopkg.in/telebot.v3 v3.3.8
 )
 
 require (
@@ -18,4 +18,5 @@ require (
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce // indirect
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/telebot.v4 v4.0.0-beta.4 // indirect
 )

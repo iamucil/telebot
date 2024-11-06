@@ -1,4 +1,4 @@
-FROM golang:1.20 AS builder
+FROM golang:1.23 AS builder
 WORKDIR /github.com/iamucil/telebot
 
 # Get the dependencies so it can be cached into a layer
